@@ -1,20 +1,24 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import JSONResponse
 import whisper
-import uvicorn
+import os
 import tempfile
-import shutil
 
 app = FastAPI()
-model = whisper.load_model("base")  # Можно "tiny", "base", "small", "medium", "large"
+
+# Загружаем легкую модель (можно "base", "small", но "tiny" быстрее и легче)
+model = whisper.load_model("tiny")
 
 @app.post("/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = tmp.name
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
 
-    result = model.transcribe(tmp_path)
-    return {"text": result["text"]}
+        result = model.transcribe(tmp_path)
+        os.remove(tmp_path)
+        return {"text": result["text"]}
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})

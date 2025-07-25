@@ -1,0 +1,12 @@
+# Перезапустить контейнер:
+
+docker rm -f whisper_api_container
+docker run -d -p 8000:5000 --name whisper_api_container whisper-api
+
+# Проверить логи:
+
+docker logs -f whisper_api_containe
+
+# Остановить контейнер:
+
+docker stop whisper_api_container
